@@ -135,17 +135,8 @@ jobs:
         run: |
           tar -I zstd -xf *.tar.zst
           cd immortalwrt-imagebuilder-$DEVICE_TARGET-$DEVICE_SUBTARGET.Linux-x86_64
-          cp -f $GITHUB_WORKSPACE/config/repositories.conf .
-          sed -i "s/DEVICE_SUBTARGET/$DEVICE_SUBTARGET/g; \
-            s/DEVICE_TARGET/$DEVICE_TARGET/g; \
-            s/DEVICE_PLATFORM/$DEVICE_PLATFORM/g" repositories.conf
           cp -rf $GITHUB_WORKSPACE/files .
           chmod +x files/etc/rc.local
-          export KERNEL_VERSION="$(ls packages | grep kernel | awk -F '_' '{print $2}')"
-          sed -i "s/DEVICE_SUBTARGET/$DEVICE_SUBTARGET/g; \
-            s/DEVICE_TARGET/$DEVICE_TARGET/g; \
-            s/KERNEL_VERSION/$KERNEL_VERSION/g; \
-            s/DEVICE_PLATFORM/$DEVICE_PLATFORM/g" files/etc/opkg/distfeeds.conf
 
       - name: Build Mini RootFS
         run: |
@@ -171,17 +162,8 @@ jobs:
         run: |
           tar -I zstd -xf *.tar.zst
           cd immortalwrt-imagebuilder-$DEVICE_TARGET-$DEVICE_SUBTARGET.Linux-x86_64
-          cp -f $GITHUB_WORKSPACE/config/repositories.conf .
-          sed -i "s/DEVICE_SUBTARGET/$DEVICE_SUBTARGET/g; \
-            s/DEVICE_TARGET/$DEVICE_TARGET/g; \
-            s/DEVICE_PLATFORM/$DEVICE_PLATFORM/g" repositories.conf
           cp -rf $GITHUB_WORKSPACE/files .
           chmod +x files/etc/rc.local
-          export KERNEL_VERSION="$(ls packages | grep kernel | awk -F '_' '{print $2}')"
-          sed -i "s/DEVICE_SUBTARGET/$DEVICE_SUBTARGET/g; \
-            s/DEVICE_TARGET/$DEVICE_TARGET/g; \
-            s/KERNEL_VERSION/$KERNEL_VERSION/g; \
-            s/DEVICE_PLATFORM/$DEVICE_PLATFORM/g" files/etc/opkg/distfeeds.conf
 
       - name: Build Normal RootFS
         run: |
