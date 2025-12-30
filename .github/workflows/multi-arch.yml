@@ -178,7 +178,12 @@ jobs:
           chmod +x $GITHUB_WORKSPACE/scripts/*
           $GITHUB_WORKSPACE/scripts/preset-terminal-tools.sh
           sed -i "/CONFIG_TARGET_ROOTFS_SQUASHFS/s/.*/# CONFIG_TARGET_ROOTFS_SQUASHFS is not set/;
-            /CONFIG_TARGET_ROOTFS_EXT4FS/s/.*/# CONFIG_TARGET_ROOTFS_EXT4FS is not set/" .config
+            /CONFIG_TARGET_ROOTFS_EXT4FS/s/.*/# CONFIG_TARGET_ROOTFS_EXT4FS is not set/;
+            /CONFIG_ISO_IMAGES/s/.*/# CONFIG_ISO_IMAGES is not set/;
+            /CONFIG_QCOW2_IMAGES/s/.*/# CONFIG_QCOW2_IMAGES is not set/;
+            /CONFIG_VDI_IMAGES/s/.*/# CONFIG_VDI_IMAGES is not set/;
+            /CONFIG_VMDK_IMAGES/s/.*/# CONFIG_VMDK_IMAGES is not set/;
+            /CONFIG_VHD_IMAGES/s/.*/# CONFIG_VHD_IMAGES is not set/" .config
           echo "CONFIG_TARGET_ROOTFS_TARGZ=y" >> .config
           export CONFIG_NORMAL_PACKAGES=$(cat $GITHUB_WORKSPACE/config/normal-packages.config | tr -s "\n" " ")
           if [ -n "$DEVICE_PROFILE" ]; then
