@@ -83,14 +83,11 @@ jobs:
         uses: docker/setup-buildx-action@v1
 
       - name: Login To DockerHub
+        if: secrets.DOCKERHUB_USERNAME != ''
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PWD }}
-
-      - name: Login To Alibaba Cloud Container Registry
-        run: |
-          docker login -u ${{ secrets.ALIYUN_USERNAME }} -p ${{ secrets.ALIYUN_PWD }} registry.cn-shanghai.aliyuncs.com
 
       - name: Generate Variables
         id: env
@@ -105,6 +102,26 @@ jobs:
           echo "DOCKER_IMAGE_ARCH=$DOCKER_IMAGE_ARCH" >> $GITHUB_ENV
           export DOCKER_EXTERA_TAG=$(echo ${{ matrix.TARGETS }} | awk -F '/' '{print $5}')
           echo "DOCKER_EXTERA_TAG=$DOCKER_EXTERA_TAG" >> $GITHUB_ENV
+
+          TAGS_MINI=""
+          TAGS_NORMAL=""
+          if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
+            TAGS_MINI="${{ secrets.DOCKERHUB_USERNAME }}/openwrt-mini:$DEVICE_PLATFORM"
+            TAGS_NORMAL="${{ secrets.DOCKERHUB_USERNAME }}/openwrt:$DEVICE_PLATFORM"
+            if [ -n "$DOCKER_EXTERA_TAG" ]; then
+              TAGS_MINI="$TAGS_MINI,${{ secrets.DOCKERHUB_USERNAME }}/openwrt-mini:$DOCKER_EXTERA_TAG"
+              TAGS_NORMAL="$TAGS_NORMAL,${{ secrets.DOCKERHUB_USERNAME }}/openwrt:$DOCKER_EXTERA_TAG"
+            fi
+          fi
+
+          echo "TAGS_MINI=$TAGS_MINI" >> $GITHUB_ENV
+          echo "TAGS_NORMAL=$TAGS_NORMAL" >> $GITHUB_ENV
+          
+          if [ -n "$TAGS_MINI" ]; then
+            echo "SHOULD_PUSH=true" >> $GITHUB_ENV
+          else
+            echo "SHOULD_PUSH=false" >> $GITHUB_ENV
+          fi
 
       - name: Download Image Builder
         run: |
@@ -137,31 +154,14 @@ jobs:
           cd $GITHUB_WORKSPACE
           rm -rf immortalwrt-imagebuilder-$DEVICE_TARGET-$DEVICE_SUBTARGET.Linux-x86_64
 
-      - name: Build & Push Mini Image (Default)
-        if: env.DOCKER_EXTERA_TAG == null
+      - name: Build & Push Mini Image
         uses: docker/build-push-action@v2
         with:
           platforms: ${{ env.DOCKER_IMAGE_ARCH }}
           file: Dockerfile
           context: .
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/openwrt-mini:${{ env.DEVICE_PLATFORM }}
-            registry.cn-shanghai.aliyuncs.com/${{ secrets.ALIYUN_NAMESPACES }}/openwrt-mini:${{ env.DEVICE_PLATFORM }}
-
-      - name: Build & Push Mini Image (Extra Tag)
-        if: env.DOCKER_EXTERA_TAG != null
-        uses: docker/build-push-action@v2
-        with:
-          platforms: ${{ env.DOCKER_IMAGE_ARCH }}
-          file: Dockerfile
-          context: .
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/openwrt-mini:${{ env.DEVICE_PLATFORM }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/openwrt-mini:${{ env.DOCKER_EXTERA_TAG }}
-            registry.cn-shanghai.aliyuncs.com/${{ secrets.ALIYUN_NAMESPACES }}/openwrt-mini:${{ env.DEVICE_PLATFORM }}
-            registry.cn-shanghai.aliyuncs.com/${{ secrets.ALIYUN_NAMESPACES }}/openwrt-mini:${{ env.DOCKER_EXTERA_TAG }}
+          push: ${{ env.SHOULD_PUSH }}
+          tags: ${{ env.TAGS_MINI }}
 
       - name: Set Normal Image Builder
         run: |
@@ -192,28 +192,11 @@ jobs:
           cd $GITHUB_WORKSPACE
           rm -rf immortalwrt-imagebuilder*
 
-      - name: Build & Push Normal Image (Default)
-        if: env.DOCKER_EXTERA_TAG == null
+      - name: Build & Push Normal Image
         uses: docker/build-push-action@v2
         with:
           platforms: ${{ env.DOCKER_IMAGE_ARCH }}
           file: Dockerfile
           context: .
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/openwrt:${{ env.DEVICE_PLATFORM }}
-            registry.cn-shanghai.aliyuncs.com/${{ secrets.ALIYUN_NAMESPACES }}/openwrt:${{ env.DEVICE_PLATFORM }}
-
-      - name: Build & Push Normal Image (Extra Tag)
-        if: env.DOCKER_EXTERA_TAG != null
-        uses: docker/build-push-action@v2
-        with:
-          platforms: ${{ env.DOCKER_IMAGE_ARCH }}
-          file: Dockerfile
-          context: .
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/openwrt:${{ env.DEVICE_PLATFORM }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/openwrt:${{ env.DOCKER_EXTERA_TAG }}
-            registry.cn-shanghai.aliyuncs.com/${{ secrets.ALIYUN_NAMESPACES }}/openwrt:${{ env.DEVICE_PLATFORM }}
-            registry.cn-shanghai.aliyuncs.com/${{ secrets.ALIYUN_NAMESPACES }}/openwrt:${{ env.DOCKER_EXTERA_TAG }}
+          push: ${{ env.SHOULD_PUSH }}
+          tags: ${{ env.TAGS_NORMAL }}
