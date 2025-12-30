@@ -95,6 +95,8 @@ jobs:
           echo "DOCKER_IMAGE_ARCH=$DOCKER_IMAGE_ARCH" >> $GITHUB_ENV
           export DOCKER_EXTERA_TAG=$(echo ${{ matrix.TARGETS }} | awk -F '/' '{print $5}')
           echo "DOCKER_EXTERA_TAG=$DOCKER_EXTERA_TAG" >> $GITHUB_ENV
+          export DEVICE_PROFILE=$(echo ${{ matrix.TARGETS }} | awk -F '/' '{print $6}')
+          echo "DEVICE_PROFILE=$DEVICE_PROFILE" >> $GITHUB_ENV
 
           TAGS_MINI=""
           TAGS_NORMAL=""
@@ -145,7 +147,11 @@ jobs:
             /CONFIG_TARGET_ROOTFS_EXT4FS/s/.*/# CONFIG_TARGET_ROOTFS_EXT4FS is not set/" .config
           echo "CONFIG_TARGET_ROOTFS_TARGZ=y" >> .config
           export CONFIG_MINI_PACKAGES=$(cat $GITHUB_WORKSPACE/config/mini-packages.config | tr -s "\n" " ")
-          make image PACKAGES="$CONFIG_MINI_PACKAGES" FILES="files"
+          if [ -n "$DEVICE_PROFILE" ]; then
+            make image PROFILE="$DEVICE_PROFILE" PACKAGES="$CONFIG_MINI_PACKAGES" FILES="files"
+          else
+            make image PACKAGES="$CONFIG_MINI_PACKAGES" FILES="files"
+          fi
           cp bin/targets/$DEVICE_TARGET/$DEVICE_SUBTARGET/*rootfs.tar.gz $GITHUB_WORKSPACE
           cd $GITHUB_WORKSPACE
           rm -rf immortalwrt-imagebuilder-$DEVICE_TARGET-$DEVICE_SUBTARGET.Linux-x86_64
@@ -175,7 +181,11 @@ jobs:
             /CONFIG_TARGET_ROOTFS_EXT4FS/s/.*/# CONFIG_TARGET_ROOTFS_EXT4FS is not set/" .config
           echo "CONFIG_TARGET_ROOTFS_TARGZ=y" >> .config
           export CONFIG_NORMAL_PACKAGES=$(cat $GITHUB_WORKSPACE/config/normal-packages.config | tr -s "\n" " ")
-          make image PACKAGES="$CONFIG_NORMAL_PACKAGES" FILES="files"
+          if [ -n "$DEVICE_PROFILE" ]; then
+            make image PROFILE="$DEVICE_PROFILE" PACKAGES="$CONFIG_NORMAL_PACKAGES" FILES="files"
+          else
+            make image PACKAGES="$CONFIG_NORMAL_PACKAGES" FILES="files"
+          fi
           cp bin/targets/$DEVICE_TARGET/$DEVICE_SUBTARGET/*rootfs.tar.gz $GITHUB_WORKSPACE
           cd $GITHUB_WORKSPACE
           rm -rf immortalwrt-imagebuilder*
@@ -188,3 +198,30 @@ jobs:
           context: .
           push: ${{ env.SHOULD_PUSH }}
           tags: ${{ env.TAGS_NORMAL }}
+
+  Update-Readme:
+    name: Update DockerHub README
+    runs-on: ubuntu-latest
+    needs: [Docker-Images]
+    if: success()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update DockerHub Description (Normal)
+        if: secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_PWD != ''
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PWD }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/openwrt
+          readme-filepath: ./README.md
+
+      - name: Update DockerHub Description (Mini)
+        if: secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_PWD != ''
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PWD }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/openwrt-mini
+          readme-filepath: ./README.md
