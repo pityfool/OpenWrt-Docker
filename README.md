@@ -63,7 +63,7 @@ OpenWrt-Mini 镜像为几乎未添加额外软件包的 Docker 镜像，你可�
 如果 fork 本项目并希望推送到自己的 DockerHub，请在 GitHub 仓库的 Settings -> Secrets and variables -> Actions 中添加以下 Secrets：
 
 - `DOCKERHUB_USERNAME`: DockerHub 用户名
-- `DOCKERHUB_PWD`: DockerHub 密码或 Access Token
+- `DOCKERHUB_PWD`: DockerHub 密码或 Access Token (注意: 若使用 Access Token，必须勾选 "Read, Write, Delete" 权限，否则无法自动更新 DockerHub 描述)
 
 添加后，Workflow 会自动检测并推送到配置的 DockerHub 仓库。
 
