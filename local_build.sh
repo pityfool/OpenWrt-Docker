@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Fix PATH variable containing backslashes (Windows-style paths) which confuse 'find'
+export PATH=$(echo "$PATH" | sed 's|\\|/|g')
+
 # 检查是否在 Linux 环境下运行
 if [[ "$OSTYPE" != "linux-gnu"* ]]; then
     echo "Error: This script must be run in a Linux environment (e.g., WSL, Ubuntu)."
@@ -115,9 +118,9 @@ echo "CONFIG_TARGET_ROOTFS_TARGZ=y" >> .config
 # 获取软件包列表
 PACKAGES=""
 if [ "$BUILD_TYPE" == "mini" ]; then
-    PACKAGES=$(cat "$PROJECT_ROOT/config/mini-packages.config" | tr -s "\n" " ")
+    PACKAGES=$(grep -v '^#' "$PROJECT_ROOT/config/mini-packages.config" | tr -s "\n" " ")
 else
-    PACKAGES=$(cat "$PROJECT_ROOT/config/normal-packages.config" | tr -s "\n" " ")
+    PACKAGES=$(grep -v '^#' "$PROJECT_ROOT/config/normal-packages.config" | tr -s "\n" " ")
 fi
 
 # 开始构建 RootFS
